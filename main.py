@@ -4,7 +4,7 @@ from pymongo.server_api import ServerApi
 
 app = FastAPI()
 
-uri = "mongodb+srv://root:omusi,2025@cluster0.3lgpw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+uri = "mongodb+srv://root:******@cluster0.3lgpw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 # Create a new client and connect to the server
 client = MongoClient(uri, server_api=ServerApi('1'))
