@@ -2,7 +2,6 @@
 
 from models import todos
 
-
 def individual_serial(todo) -> dict:
     return {"id": str(todo["_id"]),
             "name": todo["name"],
@@ -10,7 +9,6 @@ def individual_serial(todo) -> dict:
             "complete": todo["complete"]
 
             }
-
 
 # deserialiser
 def list_serial(todos) -> list:

@@ -9,6 +9,8 @@ class Todos(BaseModel):
     description: str
     complete:bool
 
+    class Config:
+       allow_population_by_field_name = True
 
 
 
