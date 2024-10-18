@@ -5,14 +5,10 @@ from pydantic import BaseModel, Field
 
 class Todos(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
-    name:str
+    name: str
     description: str
-    day:str
-    complete:bool
-
+    day: str
+    complete: bool
 
     class Config:
-       allow_population_by_field_name = True
-
-
-
+        allow_population_by_field_name = True
