@@ -1,7 +1,7 @@
 from pymongo import MongoClient, errors
 
 try:
-    client = MongoClient("mongodb+srv://root:*****@cluster0.3lgpw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+    client = MongoClient("mongodb+srv://root:Omusi,2025@cluster0.3lgpw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
     db = client.todo_db
     collection_name = db["todo_collections"]
     print("Connected to the database successfully!")
