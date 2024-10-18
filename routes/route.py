@@ -3,20 +3,10 @@ from typing import List
 from models.todos import Todos
 from config.database import collection_name
 from bson import ObjectId
-from schema.schema import list_serial
+from schema.schema import list_serialize_todo_item
 
 router = APIRouter()
 
-
-# function to serialize the items
-def list_serialize_todo_item(todo) -> dict:
-    return {
-        "id": str(todo["_id"]),
-        "title": todo["title"],
-        "description": todo.get("description", ""),
-        "completed": todo["completed"],
-        "day": todo["day"]
-    }
 
 
 # Retrieve all todos
