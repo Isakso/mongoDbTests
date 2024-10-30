@@ -9,6 +9,6 @@ app = FastAPI()
 
 app.include_router(router, prefix="/todos")
 
-# Set up logging
+# logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
