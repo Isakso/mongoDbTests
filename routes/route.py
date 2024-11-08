@@ -3,18 +3,16 @@ from typing import List
 from models.todos import Todos
 from config.database import collection_name
 from bson import ObjectId
-from schema.schema import list_serialize_todo_item
+from schema.schema import list_serialize_todo_item, list_serial
 
 router = APIRouter()
-
-
 
 # Retrieve all todos
 @router.get("/", response_model=List[Todos])
 async def get_todo():
     try:
         todos_cursor = collection_name.find()  # Fetch all todos from MongoDB
-        todos = list_serialize_todo_item(todos_cursor)
+        todos = list_serial(todos_cursor)
         return todos
     except Exception as e:
         # Log the exception for debugging
@@ -27,11 +25,15 @@ async def get_todo():
 @router.get("/{todo_id}", response_model=Todos)
 async def get_todo_by_id(todo_id: str):
     try:
+        print(f"Received todo_id: {todo_id}")
+        todo_id = todo_id.strip().replace("'", "").replace('"', "")
         # Convert the todo_id string to an ObjectId
         todo_object_id = ObjectId(todo_id)
+        print(f"Converted ObjectId: {todo_object_id}")
 
         # Fetch from collection
         todo_data = collection_name.find_one({"_id": todo_object_id})
+        print(f"Fetched Todo Data: {todo_data}")
 
         if todo_data is None:
             raise HTTPException(status_code=404, detail="Todo not found")
