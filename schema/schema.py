@@ -1,20 +1,20 @@
-# json Serializer
+from typing import Any, Dict
 
-from models import todos
-
-
-# function to serialize the items
-def list_serialize_todo_item(todo: dict) -> dict:
+# serialize a single todo item
+def list_serialize_todo_item(todo: Dict[str, Any]) -> Dict[str, Any]:
     return {
-        "id": str(todo.get("_id")),
-        "name": todo.get("name", ""),
-        "description": todo.get("description", ""),
-        "complete": todo.get("complete", False),
-        "day": todo.get("day", "")
+        "id": str(todo.get("_id")) if "_id" in todo else None,  # Convert ObjectId to string if present
+        "name": todo.get("name", ""),                            # Default to empty string if name is missing
+        "description": todo.get("description", ""),   
+        "day": todo.get("day", ""),          
+        "complete": todo.get("complete", False)               
     }
 
-
-# deserializer
-def list_serial(cursor) -> list:
-    todos_list = list(cursor)  #
+# serialize a list of todos using the provided cursor
+async def list_serial(cursor) -> list:
+    # Await the cursor to list conversion
+    todos_list = await cursor.to_list(length=None)
+    # Return serialized list of todos
     return [list_serialize_todo_item(todo) for todo in todos_list]
+
+
