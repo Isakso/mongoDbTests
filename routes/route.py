@@ -1,81 +1,78 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
-from models.todos import Todos
+from models.DaySchedule import DaySchedule
 from config.database import collection_name
-from bson import ObjectId
-from schema.schema import list_serialize_todo_item, list_serial
+
 
 router = APIRouter()
 
-# Retrieve all todos
-@router.get("/", response_model=List[Todos])
-async def get_todo():
+# Retrieve all day schedules
+@router.get("/", response_model=List[DaySchedule])
+async def get_day_schedules():
     try:
-        todos_cursor = collection_name.find()  # Fetch all todos from MongoDB
-        todos = list_serial(todos_cursor)
-        return todos
+        schedules_cursor = collection_name.find()  # Fetch all schedules from MongoDB
+        schedules = await schedules_cursor.to_list(length=None)  # Await async cursor
+        print(f"Fetched schedules: {schedules}")  
+        return [DaySchedule(**schedule) for schedule in schedules]  # Deserialize to DaySchedule
     except Exception as e:
-        # Log the exception for debugging
-        print(f"Error occurred while fetching todos: {str(e)}")
-        # Raise an HTTP exception with a descriptive message
-        raise HTTPException(status_code=500, detail="Failed to fetch todos")
+        print(f"Error occurred while fetching schedules: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch schedules")
 
-
-# Retrieve a task by id
-@router.get("/{todo_id}", response_model=Todos)
-async def get_todo_by_id(todo_id: str):
+# Retrieve a day schedule by day
+@router.get("/{day}", response_model=DaySchedule)
+async def get_day_schedule(day: str):
     try:
-        print(f"Received todo_id: {todo_id}")
-        todo_id = todo_id.strip().replace("'", "").replace('"', "")
-        # Convert the todo_id string to an ObjectId
-        todo_object_id = ObjectId(todo_id)
-        print(f"Converted ObjectId: {todo_object_id}")
-
-        # Fetch from collection
-        todo_data = collection_name.find_one({"_id": todo_object_id})
-        print(f"Fetched Todo Data: {todo_data}")
-
-        if todo_data is None:
-            raise HTTPException(status_code=404, detail="Todo not found")
-
-        # Return the serialized item
-        return list_serialize_todo_item(todo_data)
-
+        schedule_data = await collection_name.find_one({"day": day})
+        print(f"Fetched schedule for {day}: {schedule_data}") 
+        if schedule_data is None:
+            raise HTTPException(status_code=404, detail="Day schedule not found")
+        return DaySchedule(**schedule_data)  # Deserialize doc to DaySchedule
     except Exception as e:
-        # Handle errors gracefully and raise a 500 HTTPException
-        print(f"Error occurred while fetching todo by id: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to fetch todo")
+        print(f"Error occurred while fetching schedule for day {day}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch day schedule")
 
-
-# Create a new task
-@router.post("/")
-async def post_todo(todo: Todos):
+# Create a new day schedule
+@router.post("/", response_model=DaySchedule)
+async def create_day_schedule(schedule: DaySchedule):
     try:
-        new_todo = todo.dict(exclude_unset=True, exclude={"id"})
-        result = collection_name.insert_one(new_todo)
-        return {"message": "Todo added successfully", "id": str(result.inserted_id)}
+        # Check if a schedule for the specified day already exists
+        existing_schedule = await collection_name.find_one({"day": schedule.day})
+        if existing_schedule:
+            raise HTTPException(status_code=400, detail="Schedule for this day already exists")
+
+        # Insert the new schedule
+        schedule_data = {
+            "day": schedule.day,
+            "todos": [todo.dict() for todo in schedule.todos]  # Serialize todos
+        }
+        await collection_name.insert_one(schedule_data)
+
+        # Retrieve and return the created schedule
+        created_schedule = await collection_name.find_one({"day": schedule.day})
+        print(f"Created schedule: {created_schedule}")  
+        return DaySchedule(**created_schedule)
     except Exception as e:
-        # Log the exception for debugging
-        print(f"Error occurred while adding todo: {str(e)}")
-        # Raise an HTTP exception with a descriptive message
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error occurred while creating schedule: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create day schedule")
 
-
-# Create multiple todos
-@router.post("/multiple")
-async def create_multiple_todos(todos: List[Todos]):
+# Update an existing day schedule by day
+@router.put("/{day}", response_model=DaySchedule)
+async def update_day_schedule(day: str, schedule: DaySchedule):
     try:
-        #  insert multiple todos into the collection
-        new_todos = [todo.dict(exclude_unset=True, exclude={"id"}) for todo in todos]
-        result = collection_name.insert_many(new_todos)
+        # Prepare updated schedule data
+        schedule_data = {
+            "day": schedule.day,
+            "todos": [todo.dict() for todo in schedule.todos]  # Serialize todos
+        }
 
-        if not result.inserted_ids:
-            raise HTTPException(status_code=500, detail="Failed to create multiple todo items")
+        # Perform the update
+        result = await collection_name.update_one({"day": day}, {"$set": schedule_data})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Day schedule not found")
 
-        # Fetch and serialize inserted todos
-        inserted_todos = collection_name.find({"_id": {"$in": result.inserted_ids}})
-        return [list_serialize_todo_item(todo) for todo in inserted_todos]
-
+        # Retrieve and return the updated schedule
+        updated_schedule = await collection_name.find_one({"day": day})
+        return DaySchedule(**updated_schedule)
     except Exception as e:
-        print(f"Error occurred while adding multiple todos: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to create multiple todos")
+        print(f"Error occurred while updating schedule for day {day}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update day schedule")
