@@ -11,4 +11,5 @@ class Todos(BaseModel):
     complete: bool
 
     class Config:
-        allow_population_by_field_name = True
+        population_by_name = True
+        enum = True
